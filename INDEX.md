@@ -20,7 +20,8 @@
 - GitHub：<https://github.com/gutingguting/gutingguting.github.io>
 - 主页：<https://gutingguting.github.io>
 - Workflow：`.github/workflows/deploy.yml`
+- 首次成功部署：<https://github.com/gutingguting/gutingguting.github.io/actions/runs/31259057821>
 
 ## 当前状态
 
-首版采用脱敏占位内容。构建、上线和浏览器验收结果以交付报告的“验证记录”章节为准。
+首版采用脱敏占位内容，已于 2026-08-08 发布上线。构建、线上路由和浏览器验收结果以交付报告的“验证记录”章节为准。
