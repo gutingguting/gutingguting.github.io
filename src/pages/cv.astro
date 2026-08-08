@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 const cvAvailable = false;
 ---
 
-<BaseLayout title="CV | Haoxin Wang" description="Curriculum vitae for Haoxin Wang.">
+<BaseLayout title="CV | WANG Haoxin" description="Curriculum vitae for WANG Haoxin.">
   <header class="page-header"><div class="container"><p class="eyebrow">Curriculum vitae</p><h1>CV</h1><p class="lede">A verified PDF will be published after the final document and redistribution scope are confirmed.</p></div></header>
   <section class="section"><div class="container">{cvAvailable ? <a class="button primary" href="/documents/cv.pdf" target="_blank" rel="noopener noreferrer">Open CV (PDF)</a> : <div class="empty-state"><strong>CV will be available soon.</strong><p>The missing file does not affect the rest of the site.</p></div>}</div></section>
 </BaseLayout>

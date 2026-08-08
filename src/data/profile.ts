@@ -1,7 +1,7 @@
 import type { Profile } from './types';
 
 export const profile: Profile = {
-  name: 'Haoxin Wang',
+  name: 'WANG Haoxin',
   title: 'Ph.D. Candidate',
   specialties: ['FPGA', 'Detector Electronics', 'High-Speed Data Acquisition', 'Precision Timing'],
   introduction:

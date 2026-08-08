@@ -6,7 +6,7 @@ const notes = (await getCollection('notes')).sort((a, b) => b.data.published.val
 const categories = ['All', ...new Set(notes.map((note) => note.data.category))];
 ---
 
-<BaseLayout title="Technical Notes | Haoxin Wang" description="Technical notes on FPGA design, high-speed links, DAQ, measurement, and statistics.">
+<BaseLayout title="Technical Notes | WANG Haoxin" description="Technical notes on FPGA design, high-speed links, DAQ, measurement, and statistics.">
   <header class="page-header"><div class="container"><p class="eyebrow">Reusable technical knowledge</p><h1>Notes</h1><p class="lede">Concise explanations of methods, interfaces, measurement definitions, and engineering trade-offs.</p></div></header>
   <section class="section">
     <div class="container">

@@ -5,7 +5,7 @@ import ResearchCard from '../../components/ResearchCard.astro';
 const research = (await getCollection('research')).sort((a, b) => Number(b.data.featured) - Number(a.data.featured));
 ---
 
-<BaseLayout title="Research | Haoxin Wang" description="Research into FPGA recovered clocks, phase uncertainty, synchronization, and measurement methods.">
+<BaseLayout title="Research | WANG Haoxin" description="Research into FPGA recovered clocks, phase uncertainty, synchronization, and measurement methods.">
   <header class="page-header"><div class="container"><p class="eyebrow">Scientific questions</p><h1>Research</h1><p class="lede">Research pages separate the physical question from the engineering platform used to investigate it.</p></div></header>
   <section class="section"><div class="container"><div class="grid grid-2">{research.map((item, index) => <ResearchCard item={item} index={index} />)}</div></div></section>
 </BaseLayout>

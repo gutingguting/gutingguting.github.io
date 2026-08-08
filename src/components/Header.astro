@@ -14,7 +14,7 @@ const isActive = (href: string) => href === '/' ? currentPath === '/' : currentP
 
 <header class="site-header">
   <div class="container header-inner">
-    <a class="brand" href="/" aria-label="Haoxin Wang — home">HAOXIN WANG</a>
+    <a class="brand" href="/" aria-label="WANG Haoxin — home">WANG Haoxin</a>
     <nav class="desktop-nav" aria-label="Primary navigation">
       <ul class="nav-list">
         {navItems.map(([label, href]) => <li><a href={href} aria-current={isActive(href) ? 'page' : undefined}>{label}</a></li>)}

@@ -5,7 +5,7 @@ interface Props { title: string; description: string; parentLabel: string; paren
 const { title, description, parentLabel, parentHref, eyebrow = parentLabel } = Astro.props;
 ---
 
-<BaseLayout title={`${title} | Haoxin Wang`} description={description}>
+<BaseLayout title={`${title} | WANG Haoxin`} description={description}>
   <header class="page-header">
     <div class="container">
       <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: parentLabel, href: parentHref }, { label: title }]} />

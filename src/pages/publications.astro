@@ -5,7 +5,7 @@ import { publications } from '../data/publications';
 const sorted = [...publications].sort((a, b) => b.year - a.year);
 ---
 
-<BaseLayout title="Publications | Haoxin Wang" description="Publications, conference contributions, talks, and technical reports.">
+<BaseLayout title="Publications | WANG Haoxin" description="Publications, conference contributions, talks, and technical reports.">
   <header class="page-header"><div class="container"><p class="eyebrow">Verified outputs only</p><h1>Publications</h1><p class="lede">Entries remain explicit placeholders until bibliographic details and redistribution permissions are confirmed.</p></div></header>
   <section class="section"><div class="container">{sorted.map((publication) => <PublicationItem publication={publication} />)}</div></section>
 </BaseLayout>
