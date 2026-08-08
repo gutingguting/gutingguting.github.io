@@ -1,0 +1,17 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import TechTags from './TechTags.astro';
+interface Props { note: CollectionEntry<'notes'>; }
+const { note } = Astro.props;
+---
+
+<a class="card note-card" href={`/notes/${note.id}/`} data-category={note.data.category}>
+  <span class="card-index">{note.data.category.toUpperCase()}</span>
+  <h3>{note.data.title}</h3>
+  <p>{note.data.summary}</p>
+  <TechTags tags={note.data.tags.slice(0, 3)} />
+  <div class="card-footer">
+    <span>{note.data.published.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+    <span>{note.data.readingTime}</span>
+  </div>
+</a>

@@ -1,0 +1,86 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import ResearchCard from '../components/ResearchCard.astro';
+import NoteCard from '../components/NoteCard.astro';
+import PublicationItem from '../components/PublicationItem.astro';
+import TechTags from '../components/TechTags.astro';
+import { profile } from '../data/profile';
+import { publications } from '../data/publications';
+
+const projects = (await getCollection('projects')).filter((item) => item.data.featured).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const research = (await getCollection('research')).filter((item) => item.data.featured);
+const notes = (await getCollection('notes')).filter((item) => item.data.featured).sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf()).slice(0, 3);
+const featuredPublications = publications.filter((item) => item.featured);
+---
+
+<BaseLayout title="Haoxin Wang | FPGA, Detector Electronics & High-Speed DAQ" description={profile.introduction} image="/og.png">
+  <Hero />
+
+  <section class="section">
+    <div class="container">
+      <SectionHeading label="01 / Research interests" title="Scientific questions shaped by measurement" description="Three connected areas guide the research: links, timing, and readout systems." />
+      <div class="grid grid-3">
+        {profile.interests.map((interest, index) => (
+          <article class="card">
+            <span class="card-index">AREA {String(index + 1).padStart(2, '0')}</span>
+            <h3>{interest.title}</h3>
+            <p>{interest.description}</p>
+            <TechTags tags={interest.keywords} />
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="focus-panel">
+        <p class="eyebrow">02 / Current focus</p>
+        <p>{profile.currentFocus}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHeading label="03 / Selected projects" title="Engineering systems built to be measured" description="Representative work across FPGA architecture, high-speed links, and detector electronics." />
+      <div class="grid grid-3">{projects.map((project, index) => <ProjectCard project={project} index={index} />)}</div>
+      <div class="button-row"><a class="button" href="/projects/">All projects →</a></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHeading label="04 / Selected research" title="From uncertainty to testable mechanisms" description="Research pages emphasize questions, hypotheses, measurement definitions, and limitations." />
+      <div class="grid grid-2">{research.map((item, index) => <ResearchCard item={item} index={index} />)}</div>
+      <div class="button-row"><a class="button" href="/research/">All research →</a></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHeading label="05 / Publications" title="Technical outputs" description="Confirmed publications will be added here without automatic scraping or unverified claims." />
+      {featuredPublications.map((publication) => <PublicationItem publication={publication} />)}
+      <div class="button-row"><a class="button" href="/publications/">Publication list →</a></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHeading label="06 / Technical notes" title="Methods, definitions, and design reasoning" description="Short technical notes make reusable engineering knowledge easier to find." />
+      <div class="grid grid-3">{notes.map((note) => <NoteCard note={note} />)}</div>
+      <div class="button-row"><a class="button" href="/notes/">All notes →</a></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHeading label="07 / About" title="Researcher, electronics engineer, instrumentation developer" description="This portfolio connects scientific reasoning with FPGA implementation and quantitative validation." />
+      <div class="button-row"><a class="button primary" href="/about/">About & contact</a><a class="button" href="/cv/">View CV</a></div>
+    </div>
+  </section>
+</BaseLayout>

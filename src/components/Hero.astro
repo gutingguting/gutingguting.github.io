@@ -1,0 +1,29 @@
+---
+import { profile } from '../data/profile';
+---
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <p class="eyebrow">Research & Engineering Portfolio</p>
+      <h1>{profile.name}</h1>
+      <p class="hero-title">{profile.title}</p>
+      <p class="specialties">{profile.specialties.join(' · ')}</p>
+      <p class="hero-intro">{profile.introduction}</p>
+      <div class="button-row" aria-label="Featured destinations">
+        <a class="button primary" href="/research/">Research</a>
+        <a class="button" href="/projects/">Projects</a>
+        <a class="button" href="/cv/">CV</a>
+      </div>
+      {profile.links.length > 0 && (
+        <div class="link-row">
+          {profile.links.map((link) => <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>)}
+        </div>
+      )}
+    </div>
+    <aside class="hero-aside" aria-label="Portfolio narrative">
+      <p class="eyebrow">Working method</p>
+      <p>Scientific question → engineering system → measurement → quantitative result → technical output.</p>
+    </aside>
+  </div>
+</section>

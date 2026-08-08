@@ -1,0 +1,19 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import ContentLayout from './ContentLayout.astro';
+import MetricGrid from '../components/MetricGrid.astro';
+import TechTags from '../components/TechTags.astro';
+interface Props { project: CollectionEntry<'projects'>; }
+const { project } = Astro.props;
+---
+
+<ContentLayout title={project.data.title} description={project.data.summary} parentLabel="Projects" parentHref="/projects/" eyebrow="Engineering project">
+  <MetricGrid metrics={project.data.metrics} />
+  <slot />
+  <div slot="aside">
+    <strong>Project snapshot</strong>
+    <p class="status">{project.data.status}</p>
+    <p><b>Role</b><br />{project.data.role}</p>
+    <TechTags tags={project.data.tags} />
+  </div>
+</ContentLayout>

@@ -1,0 +1,18 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import ContentLayout from './ContentLayout.astro';
+import TechTags from '../components/TechTags.astro';
+interface Props { note: CollectionEntry<'notes'>; }
+const { note } = Astro.props;
+---
+
+<ContentLayout title={note.data.title} description={note.data.summary} parentLabel="Notes" parentHref="/notes/" eyebrow={note.data.category}>
+  <slot />
+  <div slot="aside">
+    <strong>Note details</strong>
+    <p>{note.data.published.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+    <p>{note.data.readingTime}</p>
+    {note.data.placeholder && <span class="placeholder">Draft placeholder</span>}
+    <TechTags tags={note.data.tags} />
+  </div>
+</ContentLayout>

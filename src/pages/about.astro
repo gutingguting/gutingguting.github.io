@@ -1,0 +1,19 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import Timeline from '../components/Timeline.astro';
+import SkillGroup from '../components/SkillGroup.astro';
+import { profile } from '../data/profile';
+import { education } from '../data/education';
+import { skillGroups } from '../data/skills';
+import { awards } from '../data/awards';
+---
+
+<BaseLayout title="About | Haoxin Wang" description="Biography, research experience, technical skills, education, and contact information.">
+  <header class="page-header"><div class="container"><p class="eyebrow">About</p><h1>Research through engineering</h1><p class="lede">A profile connecting scientific instrumentation, FPGA design, high-speed data acquisition, and quantitative measurement.</p></div></header>
+  <section class="section"><div class="container"><SectionHeading label="01 / Biography" title="Scientific questions need observable systems" /><div class="prose"><p>{profile.introduction}</p><p>This first public version intentionally omits unconfirmed institutional and contact information. Confirmed details can be added through the central data files without changing page components.</p></div></div></section>
+  <section class="section"><div class="container"><SectionHeading label="02 / Education" title="Academic background" /><Timeline items={education} /></div></section>
+  <section class="section"><div class="container"><SectionHeading label="03 / Technical skills" title="Methods and engineering practice" /><div class="grid grid-2">{skillGroups.map((group) => <SkillGroup group={group} />)}</div></div></section>
+  <section class="section"><div class="container"><SectionHeading label="04 / Awards & activities" title="To be confirmed" description="No awards or professional activities are published until they are verified." />{awards.length === 0 && <p class="empty-state">Confirmed entries will be added here.</p>}</div></section>
+  <section class="section"><div class="container"><SectionHeading label="05 / Contact" title="Contact details pending confirmation" description="Email, ORCID, Google Scholar, and professional links are intentionally not published in this placeholder release." /></div></section>
+</BaseLayout>

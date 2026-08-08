@@ -1,0 +1,22 @@
+---
+import type { Publication } from '../data/types';
+interface Props { publication: Publication; }
+const { publication } = Astro.props;
+const links = [
+  ['DOI', publication.doi],
+  ['PDF', publication.pdf],
+  ['Code', publication.code],
+  ['Slides', publication.slides],
+].filter((item): item is [string, string] => Boolean(item[1]));
+---
+
+<article class="publication">
+  <div class="publication-year">{publication.year}<br />{publication.type}</div>
+  <div>
+    <h3>{publication.title}</h3>
+    <p>{publication.authors.join(', ')}</p>
+    <p>{publication.venue}</p>
+    {publication.placeholder && <span class="placeholder">Placeholder — not a publication claim</span>}
+    {links.length > 0 && <div class="link-row">{links.map(([label, href]) => <a href={href} target="_blank" rel="noopener noreferrer">{label}</a>)}</div>}
+  </div>
+</article>

@@ -1,0 +1,10 @@
+---
+import type { SkillGroup as SkillGroupType } from '../data/types';
+interface Props { group: SkillGroupType; }
+const { group } = Astro.props;
+---
+
+<section class="skill-group">
+  <h3>{group.title}</h3>
+  <p>{group.skills.join(' · ')}</p>
+</section>

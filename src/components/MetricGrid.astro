@@ -1,0 +1,11 @@
+---
+interface Metric { label: string; value: string; }
+interface Props { metrics: Metric[]; }
+const { metrics } = Astro.props;
+---
+
+{metrics.length > 0 && (
+  <div class="metric-grid" aria-label="Selected project metrics">
+    {metrics.map((metric) => <div class="metric"><span>{metric.label}</span><strong>{metric.value}</strong></div>)}
+  </div>
+)}

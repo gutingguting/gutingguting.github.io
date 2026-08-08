@@ -1,0 +1,11 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+const projects = (await getCollection('projects')).sort((a, b) => Number(b.data.featured) - Number(a.data.featured) || b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<BaseLayout title="Projects | Haoxin Wang" description="FPGA, detector electronics, data acquisition, and precision timing engineering projects.">
+  <header class="page-header"><div class="container"><p class="eyebrow">Engineering portfolio</p><h1>Projects</h1><p class="lede">Systems are presented through architecture, implementation, measurement, challenges, and individual contributions.</p></div></header>
+  <section class="section"><div class="container"><div class="grid grid-3">{projects.map((project, index) => <ProjectCard project={project} index={index} />)}</div></div></section>
+</BaseLayout>

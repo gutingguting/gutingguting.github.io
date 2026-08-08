@@ -1,0 +1,33 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NoteCard from '../../components/NoteCard.astro';
+const notes = (await getCollection('notes')).sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf());
+const categories = ['All', ...new Set(notes.map((note) => note.data.category))];
+---
+
+<BaseLayout title="Technical Notes | Haoxin Wang" description="Technical notes on FPGA design, high-speed links, DAQ, measurement, and statistics.">
+  <header class="page-header"><div class="container"><p class="eyebrow">Reusable technical knowledge</p><h1>Notes</h1><p class="lede">Concise explanations of methods, interfaces, measurement definitions, and engineering trade-offs.</p></div></header>
+  <section class="section">
+    <div class="container">
+      <div class="filter-bar"><label for="category-filter">Category</label><select id="category-filter"><option value="All">All notes</option>{categories.slice(1).map((category) => <option value={category}>{category}</option>)}</select></div>
+      <div class="grid grid-3" id="notes-grid">{notes.map((note) => <NoteCard note={note} />)}</div>
+      <p class="empty-state" id="notes-empty" hidden>No notes in this category yet.</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const select = document.querySelector<HTMLSelectElement>('#category-filter');
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('.note-card'));
+  const empty = document.querySelector<HTMLElement>('#notes-empty');
+  select?.addEventListener('change', () => {
+    let visible = 0;
+    cards.forEach((card) => {
+      const show = select.value === 'All' || card.dataset.category === select.value;
+      card.hidden = !show;
+      if (show) visible += 1;
+    });
+    if (empty) empty.hidden = visible > 0;
+  });
+</script>

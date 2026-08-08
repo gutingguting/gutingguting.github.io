@@ -1,0 +1,16 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import ContentLayout from './ContentLayout.astro';
+import TechTags from '../components/TechTags.astro';
+interface Props { item: CollectionEntry<'research'>; }
+const { item } = Astro.props;
+---
+
+<ContentLayout title={item.data.title} description={item.data.summary} parentLabel="Research" parentHref="/research/" eyebrow="Research topic">
+  <slot />
+  <div slot="aside">
+    <strong>Research snapshot</strong>
+    <p class="status">{item.data.status}</p>
+    <TechTags tags={item.data.topics} />
+  </div>
+</ContentLayout>

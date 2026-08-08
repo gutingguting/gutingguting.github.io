@@ -1,0 +1,9 @@
+---
+import type { Education } from '../data/types';
+interface Props { items: Education[]; }
+const { items } = Astro.props;
+---
+
+<ol class="timeline">
+  {items.map((item) => <li><time>{item.period}</time><div><strong>{item.degree}</strong><br /><span>{item.institution}</span>{item.detail && <p>{item.detail}</p>}</div></li>)}
+</ol>

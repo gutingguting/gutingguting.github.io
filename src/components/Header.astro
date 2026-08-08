@@ -1,0 +1,32 @@
+---
+const currentPath = Astro.url.pathname;
+const navItems = [
+  ['HOME', '/'],
+  ['RESEARCH', '/research/'],
+  ['PROJECTS', '/projects/'],
+  ['PUBLICATIONS', '/publications/'],
+  ['NOTES', '/notes/'],
+  ['ABOUT', '/about/'],
+  ['CV', '/cv/'],
+] as const;
+const isActive = (href: string) => href === '/' ? currentPath === '/' : currentPath.startsWith(href);
+---
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="Haoxin Wang — home">HAOXIN WANG</a>
+    <nav class="desktop-nav" aria-label="Primary navigation">
+      <ul class="nav-list">
+        {navItems.map(([label, href]) => <li><a href={href} aria-current={isActive(href) ? 'page' : undefined}>{label}</a></li>)}
+      </ul>
+    </nav>
+    <details class="mobile-nav">
+      <summary>MENU</summary>
+      <nav aria-label="Mobile navigation">
+        <ul class="nav-list">
+          {navItems.map(([label, href]) => <li><a href={href} aria-current={isActive(href) ? 'page' : undefined}>{label}</a></li>)}
+        </ul>
+      </nav>
+    </details>
+  </div>
+</header>
