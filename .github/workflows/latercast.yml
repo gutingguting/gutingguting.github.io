@@ -10,6 +10,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: latercast
@@ -89,3 +91,26 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Episode: ${{ steps.result.outputs.title }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Feed: ${{ steps.result.outputs.feed_url }}" >> "$GITHUB_STEP_SUMMARY"
+
+  build-pages:
+    runs-on: ubuntu-latest
+    needs: add-episode
+    steps:
+      - name: Checkout updated repository
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Build and upload Pages artifact
+        uses: withastro/action@v6
+
+  deploy-pages:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-pages
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
