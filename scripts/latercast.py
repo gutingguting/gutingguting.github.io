@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from email.utils import format_datetime
 from pathlib import Path
@@ -37,8 +38,7 @@ def run(cmd: list[str], capture: bool = False) -> str:
 
 
 def safe_ascii_id(extractor: str, raw_id: str) -> str:
-    value = f"{extractor}{raw_id}"
-    value = re.sub(r"[^A-Za-z0-9]", "", value)
+    value = re.sub(r"[^A-Za-z0-9]", "", f"{extractor}{raw_id}")
     if not value:
         raise RuntimeError("Could not derive an ASCII-safe episode id.")
     return value[:120]
@@ -66,7 +66,6 @@ def ensure_cover() -> None:
     size = 1400
     image = Image.new("RGB", (size, size), (246, 246, 246))
     draw = ImageDraw.Draw(image)
-
     font_paths = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -78,15 +77,10 @@ def ensure_cover() -> None:
                 return ImageFont.truetype(fp, px)
         return ImageFont.load_default()
 
-    title_font = font(150)
-    sub_font = font(62)
-    tiny_font = font(42)
-
     draw.rectangle((90, 90, size - 90, size - 90), outline=(25, 25, 25), width=12)
-    draw.text((140, 430), "LATERCAST", font=title_font, fill=(20, 20, 20))
-    draw.text((145, 640), "MY WATCH LATER", font=sub_font, fill=(70, 70, 70))
-    draw.text((145, 1000), "VIDEO -> PODCAST", font=tiny_font, fill=(110, 110, 110))
-
+    draw.text((140, 430), "LATERCAST", font=font(150), fill=(20, 20, 20))
+    draw.text((145, 640), "MY WATCH LATER", font=font(62), fill=(70, 70, 70))
+    draw.text((145, 1000), "VIDEO -> PODCAST", font=font(42), fill=(110, 110, 110))
     COVER_PNG.parent.mkdir(parents=True, exist_ok=True)
     image.save(COVER_PNG, "PNG", optimize=True)
 
@@ -103,29 +97,84 @@ def duration_text(seconds: int | float | None) -> str:
     return f"{h:02d}:{m:02d}:{s:02d}"
 
 
+def is_bilibili(url: str) -> bool:
+    value = url.lower()
+    return "bilibili.com/" in value or "b23.tv/" in value
+
+
+def bootstrap_bilibili_cookiefile() -> Path | None:
+    """Create anonymous Bilibili fingerprint cookies for yt-dlp.
+
+    This does not log in and does not use account credentials. It only asks
+    Bilibili's public fingerprint endpoint for the anonymous buvid cookies that
+    its web client normally receives.
+    """
+    cookie_path = WORK_DIR / "bilibili-cookies.txt"
+    try:
+        from curl_cffi import requests
+
+        session = requests.Session(impersonate="chrome")
+        headers = {
+            "Referer": "https://www.bilibili.com/",
+            "Origin": "https://www.bilibili.com",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        }
+        # Prime ordinary anonymous cookies, then request the fingerprint pair.
+        session.get("https://www.bilibili.com/", headers=headers, timeout=15)
+        response = session.get(
+            "https://api.bilibili.com/x/frontend/finger/spi",
+            headers=headers,
+            timeout=15,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        data = payload.get("data") or {}
+        buvid3 = data.get("b_3")
+        buvid4 = data.get("b_4")
+        if not buvid3 or not buvid4:
+            raise RuntimeError(f"finger API did not return b_3/b_4: {payload!r}")
+
+        expiry = int(time.time()) + 365 * 24 * 3600
+        b_nut = str(int(time.time()))
+        lines = [
+            "# Netscape HTTP Cookie File",
+            f".bilibili.com\tTRUE\t/\tFALSE\t{expiry}\tbuvid3\t{buvid3}",
+            f".bilibili.com\tTRUE\t/\tFALSE\t{expiry}\tbuvid4\t{buvid4}",
+            f".bilibili.com\tTRUE\t/\tFALSE\t{expiry}\tb_nut\t{b_nut}",
+        ]
+        cookie_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print(f"Prepared anonymous Bilibili cookies at {cookie_path}", flush=True)
+        return cookie_path
+    except Exception as exc:
+        print(f"WARNING: Bilibili cookie bootstrap failed: {exc}", file=sys.stderr, flush=True)
+        return None
+
+
+def ytdlp_prefix(url: str) -> list[str]:
+    cmd = ["yt-dlp", "--impersonate", "chrome"]
+    if is_bilibili(url):
+        cookie_path = bootstrap_bilibili_cookiefile()
+        cmd += [
+            "--add-header", "Referer:https://www.bilibili.com/",
+            "--add-header", "Origin:https://www.bilibili.com",
+        ]
+        if cookie_path:
+            cmd += ["--cookies", str(cookie_path)]
+    return cmd
+
+
 def write_index(site_url: str) -> None:
-    index = PODCAST_DIR / "index.html"
     feed_url = f"{site_url.rstrip('/')}/podcast/feed.xml"
     html = f"""<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>LaterCast</title>
-</head>
-<body>
-  <main>
-    <h1>LaterCast</h1>
-    <p>我的稍后听 Podcast。</p>
-    <p>RSS: <a href="{feed_url}">{feed_url}</a></p>
-  </main>
-</body>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LaterCast</title></head>
+<body><main><h1>LaterCast</h1><p>我的稍后听 Podcast。</p><p>RSS: <a href="{feed_url}">{feed_url}</a></p></main></body>
 </html>
 """
-    index.write_text(html, encoding="utf-8")
+    (PODCAST_DIR / "index.html").write_text(html, encoding="utf-8")
 
 
-def build_feed(episodes: list[dict], site_url: str) -> None:
+def build_feed(episodes: list[dict], site_url: str, home_url: str) -> None:
     site_url = site_url.rstrip("/")
     rss = ET.Element("rss", {"version": "2.0", "xmlns:content": CONTENT_NS})
     channel = ET.SubElement(rss, "channel")
@@ -137,7 +186,7 @@ def build_feed(episodes: list[dict], site_url: str) -> None:
         return el
 
     child(channel, "title", "我的稍后听 · LaterCast")
-    child(channel, "link", f"{site_url}/podcast/")
+    child(channel, "link", home_url)
     child(channel, "description", "把长视频变成适合在 Apple Podcasts 里收听的个人稍后听列表。")
     child(channel, "language", "zh-cn")
     child(channel, "lastBuildDate", format_datetime(datetime.now(timezone.utc), usegmt=True))
@@ -145,12 +194,14 @@ def build_feed(episodes: list[dict], site_url: str) -> None:
     child(channel, f"{{{ITUNES_NS}}}summary", "Personal watch-later audio feed.")
     child(channel, f"{{{ITUNES_NS}}}explicit", "false")
     child(channel, f"{{{ITUNES_NS}}}type", "episodic")
+    # This feed is intended to be followed directly by URL, not indexed publicly.
+    child(channel, f"{{{ITUNES_NS}}}block", "true")
     ET.SubElement(channel, f"{{{ITUNES_NS}}}image", {"href": f"{site_url}/podcast/cover.png"})
 
     image = child(channel, "image")
     child(image, "url", f"{site_url}/podcast/cover.png")
     child(image, "title", "我的稍后听 · LaterCast")
-    child(image, "link", f"{site_url}/podcast/")
+    child(image, "link", home_url)
 
     for ep in sorted(episodes, key=lambda x: x["added_at"], reverse=True):
         item = child(channel, "item")
@@ -163,15 +214,11 @@ def build_feed(episodes: list[dict], site_url: str) -> None:
         dt = datetime.fromisoformat(ep["added_at"].replace("Z", "+00:00")).astimezone(timezone.utc)
         child(item, "pubDate", format_datetime(dt, usegmt=True))
         child(item, "guid", ep["guid"], {"isPermaLink": "false"})
-        ET.SubElement(
-            item,
-            "enclosure",
-            {
-                "url": ep["audio_url"],
-                "length": str(ep["length"]),
-                "type": "audio/mp4",
-            },
-        )
+        ET.SubElement(item, "enclosure", {
+            "url": ep["audio_url"],
+            "length": str(ep["length"]),
+            "type": "audio/mp4",
+        })
         child(item, f"{{{ITUNES_NS}}}duration", duration_text(ep.get("duration")))
         child(item, f"{{{ITUNES_NS}}}episodeType", "full")
         child(item, f"{{{ITUNES_NS}}}explicit", "false")
@@ -188,13 +235,17 @@ def main() -> int:
     args = parser.parse_args()
 
     repo = os.environ.get("GITHUB_REPOSITORY", "gutingguting/gutingguting.github.io")
-    site_url = os.environ.get("LATERCAST_SITE_URL", "https://gutingguting.github.io")
+    branch = os.environ.get("LATERCAST_BRANCH", "latercast")
+    default_site_url = f"https://raw.githubusercontent.com/{repo}/{branch}/public"
+    site_url = os.environ.get("LATERCAST_SITE_URL", default_site_url)
+    home_url = os.environ.get("LATERCAST_HOME_URL", f"https://github.com/{repo}/tree/{branch}")
 
     PODCAST_DIR.mkdir(parents=True, exist_ok=True)
     WORK_DIR.mkdir(parents=True, exist_ok=True)
 
+    ydl = ytdlp_prefix(args.url)
     meta_text = run(
-        ["yt-dlp", "--dump-single-json", "--no-playlist", "--skip-download", args.url],
+        ydl + ["--dump-single-json", "--no-playlist", "--skip-download", args.url],
         capture=True,
     )
     meta = json.loads(meta_text)
@@ -209,13 +260,10 @@ def main() -> int:
         old.unlink()
 
     run(
-        [
-            "yt-dlp",
+        ydl + [
             "--no-playlist",
-            "-f",
-            "bestaudio/best",
-            "-o",
-            str(WORK_DIR / "source.%(ext)s"),
+            "-f", "bestaudio/best",
+            "-o", str(WORK_DIR / "source.%(ext)s"),
             args.url,
         ]
     )
@@ -225,43 +273,20 @@ def main() -> int:
         raise RuntimeError("yt-dlp finished but no source audio file was found.")
     source = max(sources, key=lambda p: p.stat().st_size)
 
-    run(
-        [
-            "ffmpeg",
-            "-y",
-            "-i",
-            str(source),
-            "-vn",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "128k",
-            "-ar",
-            "48000",
-            "-movflags",
-            "+faststart",
-            str(audio_path),
-        ]
-    )
+    run([
+        "ffmpeg", "-y", "-i", str(source), "-vn",
+        "-c:a", "aac", "-b:a", "128k", "-ar", "48000",
+        "-movflags", "+faststart", str(audio_path),
+    ])
 
-    ffprobe_out = run(
-        [
-            "ffprobe",
-            "-v",
-            "error",
-            "-show_entries",
-            "format=duration",
-            "-of",
-            "default=noprint_wrappers=1:nokey=1",
-            str(audio_path),
-        ],
-        capture=True,
-    ).strip()
+    ffprobe_out = run([
+        "ffprobe", "-v", "error", "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1", str(audio_path),
+    ], capture=True).strip()
     duration = int(round(float(ffprobe_out))) if ffprobe_out else int(meta.get("duration") or 0)
 
     audio_url = f"https://github.com/{repo}/releases/download/{tag}/{asset_name}"
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
     episodes = load_episodes()
     existing = next((ep for ep in episodes if ep.get("guid") == safe_id), None)
     added_at = existing.get("added_at") if existing else now
@@ -287,7 +312,7 @@ def main() -> int:
     save_episodes(episodes)
     ensure_cover()
     write_index(site_url)
-    build_feed(episodes, site_url)
+    build_feed(episodes, site_url, home_url)
 
     result = {
         "guid": safe_id,
