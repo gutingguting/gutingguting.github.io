@@ -16,8 +16,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  add-episode:
-    runs-on: ubuntu-latest
+  download:
+    # The video download runs on the user's own machine/network instead of an
+    # Azure/GitHub-hosted IP. Add a repository self-hosted runner with the
+    # custom label `latercast` once, then this job is routed there.
+    runs-on: [self-hosted, latercast]
+
+    # If the runner itself reaches GitHub through an HTTP(S) proxy, allow
+    # Bilibili traffic to bypass that proxy. A full-tunnel VPN still needs
+    # split tunneling in the VPN client.
+    env:
+      NO_PROXY: bilibili.com,.bilibili.com,b23.tv
+      no_proxy: bilibili.com,.bilibili.com,b23.tv
 
     steps:
       - name: Checkout LaterCast branch
@@ -30,31 +40,61 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg git
+      - name: Install Python dependencies
+        run: >-
           python -m pip install --upgrade pip
-          python -m pip install \
-            "yt-dlp[default,curl-cffi] @ git+https://github.com/thanhtaivtt/yt-dlp.git@c46ead3168dd1f56cdba9b1b2baa44b0e2bc3e31" \
-            pillow
+          "yt-dlp[default,curl-cffi] @ https://github.com/thanhtaivtt/yt-dlp/archive/c46ead3168dd1f56cdba9b1b2baa44b0e2bc3e31.zip"
+          pillow
+
+      - name: Check FFmpeg
+        run: |
+          ffmpeg -version
+          ffprobe -version
 
       - name: Show downloader version
         run: |
           yt-dlp --version
-          python - <<'PY'
-          import yt_dlp
-          print('yt-dlp module:', yt_dlp.__file__)
-          PY
-          yt-dlp --list-impersonate-targets || true
+          yt-dlp --list-impersonate-targets
 
-      - name: Build podcast episode
+      - name: Build podcast episode locally
         env:
           LATERCAST_BRANCH: latercast
           LATERCAST_SITE_URL: https://raw.githubusercontent.com/gutingguting/gutingguting.github.io/latercast/public
           LATERCAST_HOME_URL: https://github.com/gutingguting/gutingguting.github.io/tree/latercast
-        run: |
-          python scripts/latercast.py "${{ inputs.url }}"
+        run: python scripts/latercast.py "${{ inputs.url }}"
+
+      - name: Upload prepared episode to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: latercast-prepared
+          path: |
+            work/*.m4a
+            work/latercast-result.json
+            public/podcast/
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Remove temporary local audio
+        if: always()
+        run: python -c "import shutil; shutil.rmtree('work', ignore_errors=True)"
+
+  publish:
+    # Everything after the actual Bilibili download stays in GitHub's cloud:
+    # Release asset upload, RSS metadata commit, and feed management.
+    runs-on: ubuntu-latest
+    needs: download
+
+    steps:
+      - name: Checkout LaterCast branch
+        uses: actions/checkout@v7
+        with:
+          ref: latercast
+
+      - name: Download prepared episode
+        uses: actions/download-artifact@v4
+        with:
+          name: latercast-prepared
+          path: .
 
       - name: Read LaterCast result
         id: result
