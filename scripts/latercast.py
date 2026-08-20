@@ -7,7 +7,6 @@ import os
 import re
 import subprocess
 import sys
-import time
 from datetime import datetime, timezone
 from email.utils import format_datetime
 from pathlib import Path
@@ -102,65 +101,13 @@ def is_bilibili(url: str) -> bool:
     return "bilibili.com/" in value or "b23.tv/" in value
 
 
-def bootstrap_bilibili_cookiefile() -> Path | None:
-    """Create anonymous Bilibili fingerprint cookies for yt-dlp.
-
-    This does not log in and does not use account credentials. It only asks
-    Bilibili's public fingerprint endpoint for the anonymous buvid cookies that
-    its web client normally receives.
-    """
-    cookie_path = WORK_DIR / "bilibili-cookies.txt"
-    try:
-        from curl_cffi import requests
-
-        session = requests.Session(impersonate="chrome")
-        headers = {
-            "Referer": "https://www.bilibili.com/",
-            "Origin": "https://www.bilibili.com",
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        }
-        # Prime ordinary anonymous cookies, then request the fingerprint pair.
-        session.get("https://www.bilibili.com/", headers=headers, timeout=15)
-        response = session.get(
-            "https://api.bilibili.com/x/frontend/finger/spi",
-            headers=headers,
-            timeout=15,
-        )
-        response.raise_for_status()
-        payload = response.json()
-        data = payload.get("data") or {}
-        buvid3 = data.get("b_3")
-        buvid4 = data.get("b_4")
-        if not buvid3 or not buvid4:
-            raise RuntimeError(f"finger API did not return b_3/b_4: {payload!r}")
-
-        expiry = int(time.time()) + 365 * 24 * 3600
-        b_nut = str(int(time.time()))
-        lines = [
-            "# Netscape HTTP Cookie File",
-            f".bilibili.com\tTRUE\t/\tFALSE\t{expiry}\tbuvid3\t{buvid3}",
-            f".bilibili.com\tTRUE\t/\tFALSE\t{expiry}\tbuvid4\t{buvid4}",
-            f".bilibili.com\tTRUE\t/\tFALSE\t{expiry}\tb_nut\t{b_nut}",
-        ]
-        cookie_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        print(f"Prepared anonymous Bilibili cookies at {cookie_path}", flush=True)
-        return cookie_path
-    except Exception as exc:
-        print(f"WARNING: Bilibili cookie bootstrap failed: {exc}", file=sys.stderr, flush=True)
-        return None
-
-
 def ytdlp_prefix(url: str) -> list[str]:
-    cmd = ["yt-dlp", "--impersonate", "chrome"]
+    # For Bilibili we run the patched upstream extractor together with a real
+    # browser TLS fingerprint. The extractor itself manages buvid/buvid_fp and
+    # Bilibili's current 412/v_voucher handling.
     if is_bilibili(url):
-        cookie_path = bootstrap_bilibili_cookiefile()
-        cmd += [
-            "--add-header", "Referer:https://www.bilibili.com/",
-            "--add-header", "Origin:https://www.bilibili.com",
-        ]
-        if cookie_path:
-            cmd += ["--cookies", str(cookie_path)]
-    return cmd
+        return ["yt-dlp", "--impersonate", "chrome"]
+    return ["yt-dlp"]
 
 
 def write_index(site_url: str) -> None:
@@ -194,7 +141,6 @@ def build_feed(episodes: list[dict], site_url: str, home_url: str) -> None:
     child(channel, f"{{{ITUNES_NS}}}summary", "Personal watch-later audio feed.")
     child(channel, f"{{{ITUNES_NS}}}explicit", "false")
     child(channel, f"{{{ITUNES_NS}}}type", "episodic")
-    # This feed is intended to be followed directly by URL, not indexed publicly.
     child(channel, f"{{{ITUNES_NS}}}block", "true")
     ET.SubElement(channel, f"{{{ITUNES_NS}}}image", {"href": f"{site_url}/podcast/cover.png"})
 
