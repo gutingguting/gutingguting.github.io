@@ -35,7 +35,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
           python -m pip install --upgrade pip
-          python -m pip install yt-dlp pillow
+          python -m pip install "yt-dlp[default,curl-cffi]" pillow
+
+      - name: Configure browser impersonation
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.config/yt-dlp"
+          printf '%s\n' '--impersonate chrome' > "$HOME/.config/yt-dlp/config"
+          yt-dlp --list-impersonate-targets
 
       - name: Build podcast episode
         env:
