@@ -33,13 +33,19 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg git
           python -m pip install --upgrade pip
-          python -m pip install "yt-dlp[default,curl-cffi]" pillow
+          python -m pip install \
+            "yt-dlp[default,curl-cffi] @ git+https://github.com/thanhtaivtt/yt-dlp.git@c46ead3168dd1f56cdba9b1b2baa44b0e2bc3e31" \
+            pillow
 
       - name: Show downloader version
         run: |
           yt-dlp --version
+          python - <<'PY'
+          import yt_dlp
+          print('yt-dlp module:', yt_dlp.__file__)
+          PY
           yt-dlp --list-impersonate-targets || true
 
       - name: Build podcast episode
